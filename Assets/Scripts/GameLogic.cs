@@ -8,6 +8,7 @@ public class GameLogic : MonoBehaviour
 
     private Board board;
     private Cell[,] state;
+    public bool gameOver;
 
     private void Awake()
     {
@@ -22,6 +23,7 @@ public class GameLogic : MonoBehaviour
     private void NewGame()
     {
         state = new Cell[width, height];
+        gameOver = false;
 
         GenerateCells();
         GenerateMines();
@@ -125,13 +127,16 @@ public class GameLogic : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(1))
+        if (!gameOver)
         {
-            Flag();
-        }
-        else if (Input.GetMouseButtonDown(0))
-        {
-            Reveal();
+            if (Input.GetMouseButtonDown(1))
+            {
+                Flag();
+            }
+            else if (Input.GetMouseButtonDown(0))
+            {
+                Reveal();
+            }
         }
     }
 
@@ -162,15 +167,24 @@ public class GameLogic : MonoBehaviour
             return;
         }
 
-        if(cell.type == Cell.Type.Empty)
+        switch (cell.type)
         {
-            Flood(cell);
+            case Cell.Type.Mine:
+                Explode(cell);
+                break;
+
+            case Cell.Type.Empty:
+                Flood(cell);
+                break;
+
+            default:
+                cell.revealed = true;
+                state[cellPosition.x, cellPosition.y] = cell;
+                break;
         }
 
-        cell.revealed = true;
-        state[cellPosition.x, cellPosition.y] = cell;
         board.Draw(state);
-    }   
+    }
 
     private void Flood(Cell cell)
     {
@@ -189,15 +203,39 @@ public class GameLogic : MonoBehaviour
         }
     }
 
+    private void Explode(Cell cell)
+    {
+        Debug.Log("Game over!");
+        gameOver = true;
+
+        cell.revealed = true;
+        cell.exploded = true;
+        state[cell.position.x, cell.position.y] = cell;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                cell = state[x, y];
+
+                if (cell.type == Cell.Type.Mine)
+                {
+                    cell.revealed = true;
+                    state[x, y] = cell;
+                }
+            }
+        }
+    }
+
     private Cell GetCell(int x, int y)
     {
         if (isValid(x, y))
         {
             return state[x, y];
         }
-        else 
+        else
         {
-           return new Cell();
+            return new Cell();
         }
     }
 
