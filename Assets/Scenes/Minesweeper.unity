@@ -413,4 +413,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 16
   height: 16
-  mineCount: 32
+  mineCount: 64
