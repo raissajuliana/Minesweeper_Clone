@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 
 public class GameLogic : MonoBehaviour
 {
@@ -8,11 +9,18 @@ public class GameLogic : MonoBehaviour
 
     private Board board;
     private Cell[,] state;
-    public bool gameOver;
+    private bool gameOver;
 
+    public TextMeshProUGUI youWinText;
+    public TextMeshProUGUI youLoseText;
+
+    public void OnValidate()
+    {
+        mineCount = Mathf.Clamp(mineCount, 0, width * height);
+    }
     private void Awake()
     {
-        board = GetComponentInChildren<Board>();
+        board = GetComponentInChildren<Board>(); 
     }
 
     private void Start()
@@ -22,6 +30,8 @@ public class GameLogic : MonoBehaviour
 
     private void NewGame()
     {
+        youWinText.gameObject.SetActive(false);
+        youLoseText.gameObject.SetActive(false);
         state = new Cell[width, height];
         gameOver = false;
 
@@ -127,7 +137,11 @@ public class GameLogic : MonoBehaviour
 
     private void Update()
     {
-        if (!gameOver)
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            NewGame();
+        }
+        else if (!gameOver)
         {
             if (Input.GetMouseButtonDown(1))
             {
@@ -175,11 +189,13 @@ public class GameLogic : MonoBehaviour
 
             case Cell.Type.Empty:
                 Flood(cell);
+                CheckWinCondition();
                 break;
 
             default:
                 cell.revealed = true;
                 state[cellPosition.x, cellPosition.y] = cell;
+                CheckWinCondition();
                 break;
         }
 
@@ -205,7 +221,7 @@ public class GameLogic : MonoBehaviour
 
     private void Explode(Cell cell)
     {
-        Debug.Log("Game over!");
+        youLoseText.gameObject.SetActive(true);
         gameOver = true;
 
         cell.revealed = true;
@@ -221,6 +237,39 @@ public class GameLogic : MonoBehaviour
                 if (cell.type == Cell.Type.Mine)
                 {
                     cell.revealed = true;
+                    state[x, y] = cell;
+                }
+            }
+        }
+    }
+
+    private void CheckWinCondition()
+    {
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                Cell cell = state[x, y];
+
+                if (cell.type != Cell.Type.Mine && !cell.revealed)
+                {
+                    return;
+                }
+            }
+        }
+
+        youWinText.gameObject.SetActive(true);
+        gameOver = true;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                Cell cell = state[x, y];
+
+                if (cell.type == Cell.Type.Mine)
+                {
+                    cell.flagged = true;
                     state[x, y] = cell;
                 }
             }
